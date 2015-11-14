@@ -1,0 +1,67 @@
+<!doctype html>
+<html data-ng-app="app">
+<head>
+    <title>My Angular App</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+    <script src="angular-chart.js"></script>
+    <link rel="stylesheet" href="angular-chart.css">
+</head>
+<body data-ng-controller="PlotCtrl">
+<label>Status servlet URL:
+    <input type="text" name="input" ng-model="url" size="100">
+</label>
+<label>Object name filter:
+    <input type="text" name="input" ng-model="filter" size="30">
+</label>
+<canvas id="line" class="chart chart-line" data-chart-data="data"
+        data-chart-labels="labels" data-chart-legend="true" data-chart-series="series"
+        data-chart-click="onClick" data-chart-options="{ scaleBeginAtZero: true }">
+</canvas>
+</body>
+<script>
+    angular.module("app", ["chart.js"])
+            .controller("PlotCtrl", function ($scope, $interval, $http) {
+                $scope.labels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                $scope.beans = {};
+                $scope.url = 'http://10140.polopoly.ninja:8080/status?rawdata=';
+                $scope.filter = 'TimeSince';
+
+                $interval(function () {
+                    $http.get('proxy?url=' + $scope.url)
+                            .then(function (resp) {
+                                var lines = resp.data.split('\n');
+                                for(var p in $scope.beans) {
+                                    if(p.indexOf($scope.filter) === -1) {
+                                        delete $scope.beans[p];
+                                    }
+                                }
+                                lines.forEach(function (e) {
+                                    if (e.lastIndexOf($scope.filter) === -1) {
+                                        return;
+                                    }
+                                    var split = e.lastIndexOf(':');
+                                    var bean = e.substring(0, split);
+                                    var value = parseInt(e.substring(split + 1));
+
+                                    if (!isNaN(value) && value < 10000) {
+                                        if (!$scope.beans.hasOwnProperty(bean) && Object.keys($scope.beans).length < 30) {
+                                            $scope.beans[bean] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                                        }
+                                        if ($scope.beans.hasOwnProperty(bean)) {
+                                            $scope.beans[bean] = $scope.beans[bean].splice(1);
+                                            $scope.beans[bean].push(value);
+                                        }
+                                    }
+                                });
+
+                                $scope.series = Object.keys($scope.beans);
+                                $scope.data = [];
+                                $scope.series.forEach(function (e) {
+                                    $scope.data.push($scope.beans[e]);
+                                });
+                            });
+                }, 1000);
+            });
+</script>
+</html>
