@@ -9,10 +9,10 @@
 </head>
 <body data-ng-controller="PlotCtrl">
 <label>Status servlet URL:
-    <input type="text" name="input" ng-model="url" size="100">
+    <input type="text" name="input" data-ng-model="url" size="100">
 </label>
 <label>Object name filter:
-    <input type="text" name="input" ng-model="filter" size="30">
+    <input type="text" name="input" data-ng-model="filter" size="30">
 </label>
 <canvas id="line" class="chart chart-line" data-chart-data="data"
         data-chart-labels="labels" data-chart-legend="true" data-chart-series="series"
@@ -27,7 +27,7 @@
                 $scope.url = 'http://10140.polopoly.ninja:8080/status?rawdata=';
                 $scope.filter = 'TimeSince';
 
-                $interval(function () {
+                var update = function () {
                     $http.get('proxy?url=' + $scope.url)
                             .then(function (resp) {
                                 var lines = resp.data.split('\n');
@@ -61,7 +61,10 @@
                                     $scope.data.push($scope.beans[e]);
                                 });
                             });
-                }, 1000);
+                };
+                update();
+
+                $interval(update, 5000);
             });
 </script>
 </html>
